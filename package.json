@@ -5,13 +5,13 @@
   "main": "src",
   "repository": {
     "type": "git",
-    "url": "git@github.com:marconi1992/serverless-offline-lambda.git"
+    "url": "git@github.com:mic175i/serverless-offline-lambda.git"
   },
   "scripts": {
     "lint": "eslint . --cache"
   },
   "license": "MIT",
-  "author": "marconi1992",
+  "author": "Michael Salim",
   "keywords": [
     "serverless",
     "lambda"

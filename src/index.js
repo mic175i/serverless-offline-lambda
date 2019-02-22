@@ -1,4 +1,5 @@
 const Hapi = require('hapi');
+const path = require('path');
 const functionHelper = require('serverless-offline/src/functionHelper');
 
 class LambdaOffline {
@@ -29,8 +30,12 @@ class LambdaOffline {
     const serviceRuntime = this.service.provider.runtime;
     const handlers = Object.keys(this.service.functions).reduce((acc, key) => {
       const fun = this.service.getFunction(key);
-      const funOptions = functionHelper.getFunctionOptions(fun, key, servicePath, serviceRuntime);
-      const handler = functionHelper.createHandler(funOptions, {});
+      const funOptions = functionHelper.getFunctionOptions(fun, key, path.join(servicePath,
+          this.service.custom['serverless-offline'].location), serviceRuntime);
+      if (!fun.events || fun.events.length === 0) {
+          const handler = functionHelper.createHandler(funOptions, this.options);
+          acc[key] = handler;
+      }
       acc[key] = handler;
       return acc;
     }, {});
