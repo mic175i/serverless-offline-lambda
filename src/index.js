@@ -36,7 +36,6 @@ class LambdaOffline {
           const handler = functionHelper.createHandler(funOptions, this.options);
           acc[key] = handler;
       }
-      acc[key] = handler;
       return acc;
     }, {});
 
