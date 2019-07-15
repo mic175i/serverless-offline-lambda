@@ -42,8 +42,13 @@ class LambdaOffline {
 
     const funOptionsCache = Object.keys(this.service.functions).reduce((acc, key) => {
       const fun = this.service.getFunction(key);
-      acc[key] = functionHelper.getFunctionOptions(fun, key, path.join(servicePath,
-        this.service.custom['serverless-offline'].location), serviceRuntime);
+      if (!fun.events || fun.events.length === 0) {
+        let location = this.servicePath;
+        if (this.service.plugins.includes('serverless-webpack')) {
+          location = path.join(servicePath, this.service.custom['serverless-offline'].location);
+        }
+        acc[fun.name] = functionHelper.getFunctionOptions(fun, fun.name, location, serviceRuntime);
+      }
       return acc;
     }, {});
 
