@@ -2,12 +2,23 @@ const Hapi = require('hapi');
 const path = require('path');
 const functionHelper = require('serverless-offline/src/functionHelper');
 
+const defaultConfig = {
+  port: 4000,
+  host: 'localhost',
+};
+
 class LambdaOffline {
   constructor(serverless, options) {
     this.service = serverless.service;
     this.options = options;
     this.serverless = serverless;
     this.serverlessLog = serverless.cli.log.bind(serverless.cli);
+    this.config = Object.assign(
+      {},
+      defaultConfig,
+      (this.service.custom || {})['serverless-offline'],
+      (this.service.custom && this.service.custom.lambda) || {}
+    );
 
     this.hooks = {
       'before:offline:start:init': this.start.bind(this),
@@ -24,18 +35,15 @@ class LambdaOffline {
 
   buidServer() {
     this.server = new Hapi.Server();
-    this.server.connection({ port: 4000, host: 'localhost' });
+    this.server.connection({ port: this.config.port, host: this.config.host });
 
     const { servicePath } = this.serverless.config;
     const serviceRuntime = this.service.provider.runtime;
-    const handlers = Object.keys(this.service.functions).reduce((acc, key) => {
+
+    const funOptionsCache = Object.keys(this.service.functions).reduce((acc, key) => {
       const fun = this.service.getFunction(key);
-      const funOptions = functionHelper.getFunctionOptions(fun, key, path.join(servicePath,
-          this.service.custom['serverless-offline'].location), serviceRuntime);
-      if (!fun.events || fun.events.length === 0) {
-          const handler = functionHelper.createHandler(funOptions, this.options);
-          acc[key] = handler;
-      }
+      acc[key] = functionHelper.getFunctionOptions(fun, key, path.join(servicePath,
+        this.service.custom['serverless-offline'].location), serviceRuntime);
       return acc;
     }, {});
 
@@ -47,7 +55,13 @@ class LambdaOffline {
           const invocationType = req.headers['x-amz-invocation-type'];
           const { functionName } = req.params;
 
-          const handler = handlers[functionName];
+          const funOptions = funOptionsCache[functionName];
+
+          if (!funOptions) {
+            return reply().code(404);
+          }
+
+          const handler = functionHelper.createHandler(funOptions, this.options);
 
           if (!handler) {
             return reply().code(404);
